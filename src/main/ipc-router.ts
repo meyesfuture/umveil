@@ -301,7 +301,22 @@ export function registerIpcHandlers(svc: Services): void {
     return svc.stage.handleReturn()
   })
 
+  // ---- Alerts ----
+  ipcMain.handle('alert:dismiss', async (event, payload) => {
+    if (!isCockpit(event)) return err('E_NOT_ALLOWED', 'Not cockpit')
+    const id = (payload as { id?: string })?.id
+    if (id) store.dispatch({ type: 'ALERT_REMOVE', id })
+    return ok(undefined)
+  })
+
+  ipcMain.handle('alerts:clear-non-sticky', async (event) => {
+    if (!isCockpit(event)) return err('E_NOT_ALLOWED', 'Not cockpit')
+    store.dispatch({ type: 'ALERTS_CLEAR_NON_STICKY' })
+    return ok(undefined)
+  })
+
   logger.info('ipc-router.registered')
+
 }
 
 export function unregisterIpcHandlers(): void {
@@ -312,6 +327,7 @@ export function unregisterIpcHandlers(): void {
     IPC.STAGE_SET_DISPLAY, IPC.STAGE_PUSH, IPC.STAGE_KILL, IPC.STAGE_RESTORE, IPC.STAGE_FREEZE,
     IPC.STAGE_PLAYBACK, IPC.STAGE_EMBED, IPC.AUDIO_REFRESH, IPC.AUDIO_SELECT, IPC.AUDIO_TEST_TONE,
     IPC.APPS_LIST, IPC.APPS_PROJECT, IPC.CURSOR_SET_LOCK, IPC.DIAGNOSTICS_COPY, IPC.OVERLAY_RETURN,
+    'alert:dismiss', 'alerts:clear-non-sticky',
   ]
   for (const ch of channels) ipcMain.removeAllListeners(ch)
 }

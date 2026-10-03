@@ -6,6 +6,7 @@ import { ConfidenceMonitor } from './components/ConfidenceMonitor'
 import { AssetBin } from './components/AssetBin'
 import { AlertBanner } from './components/AlertBanner'
 import { StatusBar } from './components/StatusBar'
+import { AudioSelector } from './components/AudioSelector'
 import './styles.css'
 
 export function App(): React.ReactElement {
@@ -52,6 +53,9 @@ export function App(): React.ReactElement {
   const handleAddEmbed = useCallback((url: string) => invoke(IPC.ITEMS_ADD_EMBED, { url }), [invoke])
   const handleRemove = useCallback((itemId: string) => invoke(IPC.ITEMS_REMOVE, { itemId }), [invoke])
   const handleProjectApp = useCallback((sourceId: string) => invoke(IPC.APPS_PROJECT, { sourceId }), [invoke])
+  const handleAudioSelect = useCallback((deviceId: string) => invoke(IPC.AUDIO_SELECT, { deviceId }), [invoke])
+  const handleAudioRefresh = useCallback(() => invoke(IPC.AUDIO_REFRESH), [invoke])
+  const handleTestTone = useCallback(() => invoke(IPC.AUDIO_TEST_TONE), [invoke])
 
   return (
     <div className="app">
@@ -64,7 +68,14 @@ export function App(): React.ReactElement {
         onSave={handleSave}
         onNew={handleNew}
         onOpen={handleOpen}
-      />
+      >
+        <AudioSelector
+          state={state}
+          onSelect={handleAudioSelect}
+          onRefresh={handleAudioRefresh}
+          onTestTone={handleTestTone}
+        />
+      </Header>
 
       {state.alerts.length > 0 && (
         <AlertBanner

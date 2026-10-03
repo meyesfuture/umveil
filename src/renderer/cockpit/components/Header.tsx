@@ -10,9 +10,10 @@ interface Props {
   onSave: () => void
   onNew: () => void
   onOpen: () => void
+  children?: React.ReactNode
 }
 
-export function Header({ state, onKill, onRestore, onStart, onStop, onSave, onNew, onOpen }: Props): React.ReactElement {
+export function Header({ state, onKill, onRestore, onStart, onStop, onSave, onNew, onOpen, children }: Props): React.ReactElement {
   const { session, killed } = state.stage
   const isLive = session === 'live'
   const isStopped = session === 'stopped'
@@ -27,6 +28,10 @@ export function Header({ state, onKill, onRestore, onStart, onStop, onSave, onNe
       <button className="btn" onClick={onNew}>New</button>
       <button className="btn" onClick={onOpen}>Open…</button>
       <button className="btn" onClick={onSave} disabled={!state.scene.dirty}>Save</button>
+
+      <div style={{ width: 1, height: 24, background: '#333', margin: '0 4px' }} />
+
+      {children}
 
       <div style={{ width: 1, height: 24, background: '#333', margin: '0 4px' }} />
 

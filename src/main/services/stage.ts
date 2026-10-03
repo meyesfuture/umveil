@@ -72,8 +72,22 @@ export class StageController {
     win.setAlwaysOnTop(true, 'screen-saver')
     win.setVisibleOnAllWorkspaces(true)
 
+    // Block unsafe webview navigations (FR-10, IPC_CONTRACT rule 5)
+    win.webContents.on('will-navigate', (_event, url) => {
+      try {
+        const { protocol } = new URL(url)
+        if (protocol !== 'https:' && protocol !== 'http:') {
+          _event.preventDefault()
+          logger.warn('stage.webview.blocked-navigation', { url: url.slice(0, 80) })
+        }
+      } catch {
+        _event.preventDefault()
+      }
+    })
+
     // Register stage IPC listeners
     this.registerStageIpc(win)
+
 
     if (process.env.ELECTRON_RENDERER_URL) {
       win.loadURL(`${process.env.ELECTRON_RENDERER_URL}/stage/index.html`)
