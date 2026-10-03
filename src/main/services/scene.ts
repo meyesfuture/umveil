@@ -121,6 +121,42 @@ function stopAutosave(): void {
 }
 
 export const SceneService = {
+  checkRecovery(): void {
+    const recoveryDir = getRecoveryDir()
+    if (!fs.existsSync(recoveryDir)) return
+    
+    const files = fs.readdirSync(recoveryDir).filter((f) => f.endsWith('.umveil'))
+    if (files.length === 0) return
+
+    // Find the newest recovery file
+    const newest = files
+      .map((f) => ({ name: f, time: fs.statSync(path.join(recoveryDir, f)).mtimeMs }))
+      .sort((a, b) => b.time - a.time)[0]
+
+    if (newest) {
+      const { dialog } = require('electron')
+      const result = dialog.showMessageBoxSync({
+        type: 'question',
+        buttons: ['Recover', 'Discard'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Recovery Available',
+        message: 'An unsaved scene from a previous session was found. Would you like to recover it?',
+      })
+
+      if (result === 0) {
+        SceneService.openScene(path.join(recoveryDir, newest.name)).catch((e) => {
+          logger.warn('recovery.failed', { error: String(e) })
+        })
+      } else {
+        // Discard all recovery files
+        for (const f of files) {
+          try { fs.unlinkSync(path.join(recoveryDir, f)) } catch { /* ignore */ }
+        }
+      }
+    }
+  },
+
   newScene(): void {
     stopAutosave()
     MediaProtocol.clearAssetPaths()

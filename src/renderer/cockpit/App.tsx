@@ -63,6 +63,13 @@ export function App(): React.ReactElement {
   const handleTestTone = useCallback(() => invoke(IPC.AUDIO_TEST_TONE), [invoke])
   const handleToggleCursorLock = useCallback(() =>
     invoke(IPC.CURSOR_SET_LOCK, { enabled: !state.cursor.lockEnabled }), [invoke, state.cursor.lockEnabled])
+  const handleCopyDiagnostics = useCallback(() => {
+    invoke<string>(IPC.DIAGNOSTICS_COPY).then((res) => {
+      if (res && 'ok' in res && res.ok) {
+        navigator.clipboard.writeText(res.value).catch(() => undefined)
+      }
+    })
+  }, [invoke])
 
   return (
     <div className="app">
@@ -75,6 +82,7 @@ export function App(): React.ReactElement {
         onSave={handleSave}
         onNew={handleNew}
         onOpen={handleOpen}
+        onCopyDiagnostics={handleCopyDiagnostics}
       >
         <AudioSelector
           state={state}

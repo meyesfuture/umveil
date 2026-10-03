@@ -88,6 +88,11 @@ export class StageController {
     // Register stage IPC listeners
     this.registerStageIpc(win)
 
+    // Handle renderer crash (M-6 stage crash recovery)
+    win.webContents.on('render-process-gone', (_e, details) => {
+      logger.error('stage.renderer.gone', { reason: details.reason })
+      this.handleStageCrash()
+    })
 
     if (process.env.ELECTRON_RENDERER_URL) {
       win.loadURL(`${process.env.ELECTRON_RENDERER_URL}/stage/index.html`)
@@ -273,6 +278,19 @@ export class StageController {
   // --------------------------------------------------------------------------
   // Sync
   // --------------------------------------------------------------------------
+
+  private handleStageCrash(): void {
+    store.dispatch({
+      type: 'ALERT_ADD',
+      alert: { level: 'error', code: 'STAGE_RENDERER_CRASHED', message: 'Stage renderer crashed and is recovering.', sticky: false }
+    })
+    
+    // Reload the window. The did-finish-load handler will call onStageReady,
+    // which automatically calls sendSyncToStage() to restore state.
+    if (this.stageWin && !this.stageWin.isDestroyed()) {
+      this.stageWin.webContents.reload()
+    }
+  }
 
   private sendSyncToStage(): void {
     const state = store.getState()

@@ -108,6 +108,9 @@ app.whenReady().then(async () => {
   const filePath = process.argv.slice(1).find((a) => a.endsWith('.umveil'))
   if (filePath) {
     await SceneService.openScene(filePath)
+  } else {
+    // Check for autosave recovery if not launched with a specific file
+    SceneService.checkRecovery()
   }
 
   // Send initial state
