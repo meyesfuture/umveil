@@ -205,6 +205,7 @@ export type AppAction =
   | { type: 'SCENE_ITEM_ADD'; item: ItemView }
   | { type: 'SCENE_ITEM_REMOVE'; itemId: string }
   | { type: 'SCENE_ITEM_UPDATE'; itemId: string; patch: Partial<ItemView> }
+  | { type: 'SCENE_ITEM_UPDATE_DURATION'; itemId: string; durationMs: number }
   // Displays
   | { type: 'DISPLAYS_UPDATE'; displays: DisplayInfo[] }
   // Stage session
@@ -317,6 +318,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         return merged as ItemView
       })
       next.scene = { ...state.scene, items, dirty: true }
+      return next
+    }
+
+    case 'SCENE_ITEM_UPDATE_DURATION': {
+      const items = state.scene.items.map((item) => {
+        if (item.id !== action.itemId || item.kind !== 'video') return item
+        return { ...item, durationMs: action.durationMs }
+      })
+      // Duration update doesn't dirty the scene (it's probed metadata)
+      next.scene = { ...state.scene, items }
       return next
     }
 

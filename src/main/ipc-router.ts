@@ -129,6 +129,20 @@ export function registerIpcHandlers(svc: Services): void {
     return svc.scene.importItems(v.value.paths)
   })
 
+  ipcMain.handle('items:import-dialog', async (event) => {
+    if (!isCockpit(event)) return err('E_NOT_ALLOWED', 'Not cockpit')
+    const { filePaths } = await dialog.showOpenDialog(cockpitWindow!, {
+      title: 'Import Media',
+      filters: [
+        { name: 'Media files', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'mp4', 'webm'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+      properties: ['openFile', 'multiSelections'],
+    })
+    if (!filePaths || filePaths.length === 0) return ok({ added: [], rejected: [] })
+    return svc.scene.importItems(filePaths)
+  })
+
   ipcMain.handle(IPC.ITEMS_ADD_EMBED, async (event, payload) => {
     if (!isCockpit(event)) return err('E_NOT_ALLOWED', 'Not cockpit')
     const v = validate(CockpitPayloads[IPC.ITEMS_ADD_EMBED], payload)
@@ -293,7 +307,7 @@ export function registerIpcHandlers(svc: Services): void {
 export function unregisterIpcHandlers(): void {
   const channels = [
     IPC.SCENE_NEW, IPC.SCENE_OPEN, IPC.SCENE_SAVE, IPC.SCENE_SAVE_AS, IPC.SCENE_UPDATE_SETTINGS,
-    IPC.ITEMS_IMPORT, IPC.ITEMS_ADD_EMBED, IPC.ITEMS_PIN_APP, IPC.ITEMS_UPDATE, IPC.ITEMS_REMOVE,
+    IPC.ITEMS_IMPORT, 'items:import-dialog', IPC.ITEMS_ADD_EMBED, IPC.ITEMS_PIN_APP, IPC.ITEMS_UPDATE, IPC.ITEMS_REMOVE,
     IPC.PREFLIGHT_RUN, IPC.STAGE_START, IPC.STAGE_STOP, IPC.STAGE_RESUME, IPC.STAGE_RESTORE_LAST_LIVE,
     IPC.STAGE_SET_DISPLAY, IPC.STAGE_PUSH, IPC.STAGE_KILL, IPC.STAGE_RESTORE, IPC.STAGE_FREEZE,
     IPC.STAGE_PLAYBACK, IPC.STAGE_EMBED, IPC.AUDIO_REFRESH, IPC.AUDIO_SELECT, IPC.AUDIO_TEST_TONE,

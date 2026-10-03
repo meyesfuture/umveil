@@ -240,7 +240,20 @@ export class StageController {
   }
 
   private onPlaybackTick(payload: unknown): void {
+    const p = payload as { positionMs: number; durationMs: number }
     this.sendToCockpit(IPC.PLAYBACK_TICK, payload)
+
+    // Update video item durationMs if not yet probed (was 0)
+    if (p.durationMs > 0) {
+      const state = store.getState()
+      if (state.stage.content.kind === 'video') {
+        const itemId = state.stage.content.itemId
+        const item = state.scene.items.find((i) => i.id === itemId)
+        if (item && item.kind === 'video' && item.durationMs === 0) {
+          store.dispatch({ type: 'SCENE_ITEM_UPDATE_DURATION', itemId, durationMs: p.durationMs })
+        }
+      }
+    }
   }
 
   // --------------------------------------------------------------------------
