@@ -56,6 +56,13 @@ app.whenReady().then(async () => {
   // Init power monitor
   PowerService.init()
 
+  // Release any residual cursor clip from a previous crashed session (INV-8 / R-05)
+  {
+    const { Win32Bridge } = require('./services/win32') as typeof import('./services/win32')
+    Win32Bridge.clipCursor(null)
+    logger.info('app.cursor.self-released')
+  }
+
   // Create Cockpit window
   cockpitWin = createCockpitWindow()
   setCockpitWindow(cockpitWin)

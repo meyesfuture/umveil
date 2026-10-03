@@ -56,6 +56,8 @@ export function App(): React.ReactElement {
   const handleAudioSelect = useCallback((deviceId: string) => invoke(IPC.AUDIO_SELECT, { deviceId }), [invoke])
   const handleAudioRefresh = useCallback(() => invoke(IPC.AUDIO_REFRESH), [invoke])
   const handleTestTone = useCallback(() => invoke(IPC.AUDIO_TEST_TONE), [invoke])
+  const handleToggleCursorLock = useCallback(() =>
+    invoke(IPC.CURSOR_SET_LOCK, { enabled: !state.cursor.lockEnabled }), [invoke, state.cursor.lockEnabled])
 
   return (
     <div className="app">
@@ -107,7 +109,7 @@ export function App(): React.ReactElement {
         </div>
       </div>
 
-      <StatusBar state={state} />
+      <StatusBar state={state} onToggleCursorLock={handleToggleCursorLock} />
     </div>
   )
 }
