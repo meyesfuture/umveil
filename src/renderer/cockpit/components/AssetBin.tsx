@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import type { AppState, ItemView } from '@shared/state'
+import type { AppWindowInfo } from '@shared/ipc'
 
 interface Props {
   state: AppState
@@ -8,13 +9,17 @@ interface Props {
   onAddEmbed: (url: string) => void
   onRemove: (itemId: string) => void
   onProjectApp: (sourceId: string) => void
+  onListApps: () => Promise<AppWindowInfo[]>
+  onPinApp: (sourceId: string) => void
 }
 
 type Tab = 'media' | 'web' | 'apps'
 
-export const AssetBin = React.memo(function AssetBin({ state, onPush, onImport, onAddEmbed, onRemove, onProjectApp }: Props): React.ReactElement {
+export const AssetBin = React.memo(function AssetBin({ state, onPush, onImport, onAddEmbed, onRemove, onProjectApp, onListApps, onPinApp }: Props): React.ReactElement {
   const [tab, setTab] = useState<Tab>('media')
   const [embedUrl, setEmbedUrl] = useState('')
+  const [liveWindows, setLiveWindows] = useState<AppWindowInfo[]>([])
+  const [loadingApps, setLoadingApps] = useState(false)
   const { content, pending, session } = state.stage
   const isLive = session === 'live'
 
@@ -38,11 +43,26 @@ export const AssetBin = React.memo(function AssetBin({ state, onPush, onImport, 
     if (files.length > 0) onImport(files)
   }
 
+  async function refreshApps(): Promise<void> {
+    setLoadingApps(true)
+    try {
+      const windows = await onListApps()
+      setLiveWindows(windows)
+    } catch {
+      setLiveWindows([])
+    } finally {
+      setLoadingApps(false)
+    }
+  }
+
   return (
     <div className="asset-bin">
       <div className="bin-tabs">
         {(['media', 'web', 'apps'] as Tab[]).map((t) => (
-          <button key={t} className={`bin-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
+          <button key={t} className={`bin-tab${tab === t ? ' active' : ''}`} onClick={() => {
+            setTab(t)
+            if (t === 'apps') refreshApps()
+          }}>
             {t === 'media' ? 'Media' : t === 'web' ? 'Web' : 'Apps'}
           </button>
         ))}
@@ -101,17 +121,58 @@ export const AssetBin = React.memo(function AssetBin({ state, onPush, onImport, 
 
         {tab === 'apps' && (
           <>
-            <div style={{ color: '#888', fontSize: 12, marginBottom: 8 }}>
-              Click a pinned target to mirror it, or use the App Switcher.
+            {/* Pinned app targets */}
+            {appItems.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ color: '#888', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pinned targets</div>
+                {appItems.map((item) => (
+                  <AppItemTile
+                    key={item.id}
+                    item={item as ItemView & { kind: 'app' }}
+                    isLive={isCurrentItem(item)}
+                    onClick={() => isLive && onPush(item.id)}
+                    onRemove={() => onRemove(item.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Live window switcher */}
+            <div style={{ color: '#888', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center' }}>
+              <span>Live windows</span>
+              <button className="btn" style={{ fontSize: 10, padding: '1px 6px', marginLeft: 8 }}
+                onClick={refreshApps} title="Refresh window list">
+                {loadingApps ? '…' : '↻'}
+              </button>
             </div>
-            {appItems.map((item) => (
-              <AppItemTile
-                key={item.id}
-                item={item as ItemView & { kind: 'app' }}
-                isLive={isCurrentItem(item)}
-                onClick={() => isLive && onPush(item.id)}
-                onRemove={() => onRemove(item.id)}
-              />
+            {liveWindows.length === 0 && !loadingApps && (
+              <div style={{ color: '#555', fontSize: 12, marginTop: 8 }}>
+                No windows found. Click ↻ to refresh.
+              </div>
+            )}
+            {liveWindows.map((win) => (
+              <div key={win.sourceId} className="item-tile" style={{ cursor: 'default' }}>
+                {win.thumbDataUrl && (
+                  <img className="item-thumb" src={win.thumbDataUrl} alt="" style={{ objectFit: 'cover' }} />
+                )}
+                <div className="item-info">
+                  <div className="item-name" title={win.title}>{win.title || win.processName || win.sourceId}</div>
+                  {win.processName && <div className="item-meta">{win.processName}</div>}
+                  {win.minimized && <div className="item-meta" style={{ color: '#ffd166' }}>minimized</div>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {isLive && (
+                    <button className="btn" style={{ fontSize: 10, padding: '2px 6px' }}
+                      onClick={() => onProjectApp(win.sourceId)} title="Mirror now">
+                      ▶
+                    </button>
+                  )}
+                  <button className="btn" style={{ fontSize: 10, padding: '2px 6px' }}
+                    onClick={() => onPinApp(win.sourceId)} title="Pin as target">
+                    📌
+                  </button>
+                </div>
+              </div>
             ))}
           </>
         )}

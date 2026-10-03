@@ -53,6 +53,11 @@ export function App(): React.ReactElement {
   const handleAddEmbed = useCallback((url: string) => invoke(IPC.ITEMS_ADD_EMBED, { url }), [invoke])
   const handleRemove = useCallback((itemId: string) => invoke(IPC.ITEMS_REMOVE, { itemId }), [invoke])
   const handleProjectApp = useCallback((sourceId: string) => invoke(IPC.APPS_PROJECT, { sourceId }), [invoke])
+  const handleListApps = useCallback(() =>
+    invoke<{ windows: import('@shared/ipc').AppWindowInfo[] }>(IPC.APPS_LIST).then((r) =>
+      r && 'ok' in r && r.ok ? r.value.windows : []
+    ), [invoke])
+  const handlePinApp = useCallback((sourceId: string) => invoke(IPC.ITEMS_PIN_APP, { sourceId }), [invoke])
   const handleAudioSelect = useCallback((deviceId: string) => invoke(IPC.AUDIO_SELECT, { deviceId }), [invoke])
   const handleAudioRefresh = useCallback(() => invoke(IPC.AUDIO_REFRESH), [invoke])
   const handleTestTone = useCallback(() => invoke(IPC.AUDIO_TEST_TONE), [invoke])
